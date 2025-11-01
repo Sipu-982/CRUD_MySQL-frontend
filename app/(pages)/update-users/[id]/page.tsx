@@ -1,28 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 
-export default function AddUser() {
+export default function UpdateUser() {
+  
+  const params = useParams<{id:string}>()
+  const id = params?.id;
+  
   const [form, setForm] = useState({
     username: "",
     email: "",
     phone: "",
-    password: "",
   });
-
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    console.log("user id:",id);
+    if(!id)return;
+    
+    const fetchUser = async () => {
+
+      try {
+        const res = await axios.get(`http://localhost:5000/api/user/getUserByID/${id}`);
+        const userInfo = res.data.data[0];
+if (userInfo) {
+          setForm({
+            username: userInfo.username || "",
+            email: userInfo.email || "",
+            phone: userInfo.phone || "",
+          });
+          setPreview(userInfo.profile_img || null);
+        }      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load user data", { position: "top-center" });
+      }
+    };
+
+    if (id) fetchUser();
+  }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // ✅ Handle image change
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -31,6 +60,7 @@ export default function AddUser() {
     }
   };
 
+  // ✅ Handle form submission (Update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -40,29 +70,23 @@ export default function AddUser() {
       formData.append("username", form.username);
       formData.append("email", form.email);
       formData.append("phone", form.phone);
-      formData.append("password", form.password);
 
       if (file) {
-        formData.append("profiles", file); // 👈 Must match multer field name
+        formData.append("profiles", file); // 👈 match multer field name
       }
 
-      const response = await axios.post(
-        "http://localhost:5000/api/user/createUser",
+      const res = await axios.put(
+        `http://localhost:5000/api/user/updateRecord/${id}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      toast.success(response.data.message || "User created successfully ✅", {
+      toast.success(res.data.message || "User updated successfully ✅", {
         position: "top-center",
       });
-
-      // Reset form
-      setForm({ username: "", email: "", phone: "", password: "" });
-      setFile(null);
-      setPreview(null);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Something went wrong", {
+      toast.error(error.response?.data?.message || "Update failed ❌", {
         position: "top-center",
       });
     } finally {
@@ -84,7 +108,7 @@ export default function AddUser() {
           transition={{ delay: 0.1 }}
           className="text-3xl font-bold mb-6 text-center text-blue-400"
         >
-          Add New User
+          Update User
         </motion.h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -127,17 +151,17 @@ export default function AddUser() {
           </div>
 
           {/* Password */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
+          {/* <div>
+            <label className="block text-sm font-medium mb-1">Password (optional)</label>
             <input
               type="password"
               name="password"
-              value={form.password}
+              value={form.password || }
               onChange={handleChange}
-              placeholder="Enter password"
+              placeholder="Enter new password"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
             />
-          </div>
+          </div> */}
 
           {/* Profile Image */}
           <div>
@@ -154,7 +178,7 @@ export default function AddUser() {
                 width={100}
                 height={100}
                 alt="Preview"
-                className="mt-3 rounded-lg w-24 h-24 object-cover border border-gray-700"
+                className="mt-3 rounded-full w-24 h-24 object-cover border border-gray-700"
               />
             )}
           </div>
@@ -169,10 +193,10 @@ export default function AddUser() {
           >
             {loading ? (
               <>
-                <Spinner /> &nbsp;Submitting...
+                <Spinner /> &nbsp;Updating...
               </>
             ) : (
-              "Submit"
+              "Update Record"
             )}
           </motion.button>
         </form>
