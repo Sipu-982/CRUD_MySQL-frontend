@@ -12,7 +12,7 @@ interface User {
   username: string;
   email: string;
   phone: string;
-  profile_img: string;
+  profilePic: string;
   created_at: string;
 }
 
@@ -82,7 +82,7 @@ export default function ViewUser() {
                 <td className="p-4 capitalize text-blue-400">{user.phone}</td>
                 <td className="relative w-14 h-14 overflow-hidden">
                   <Image
-                    src={user.profile_img}
+                    src={user.profilePic}
                     alt="profile"
                     fill
                     className="object-scale-down rounded-full"
